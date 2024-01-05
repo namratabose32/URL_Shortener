@@ -7,7 +7,7 @@ const urlRoute=require('./routes/url');
 const URL = require('./models/url');
 const staticRoute=require('./routes/staticRouter')
 const userRoute=require("./routes/user");
-const { restrictToLoggedinUserOnly, checkAuth } = require('./middlewares/auth');
+const { checkForAuthentication, restrictTo } = require('./middlewares/auth');
 const PORT=8001;
 
 connectToMongoDB('mongodb+srv://namratabose322:namratabose32@cluster0.hfublfb.mongodb.net/?retryWrites=true&w=majority').then(()=>console.log("MongoDb connected"));
@@ -18,7 +18,7 @@ app.set('views',path.resolve("./views"))
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
 app.use(cookieParser());
-
+app.use(checkForAuthentication);
 app.get("/test",async(req,res)=>{
     const allUrls=await URL.find({});
     return res.render('home',{
@@ -26,9 +26,9 @@ app.get("/test",async(req,res)=>{
     })
 }) 
 
-app.use("/url",restrictToLoggedinUserOnly,urlRoute);
+app.use("/url",restrictTo(["NORMAL","ADMIN"]),urlRoute);
 app.use("/user",userRoute);
-app.use('/',checkAuth,staticRoute)
+app.use('/',staticRoute)
 app.get('/url/:shortId', async (req,res)=>{
     const shortId=req.params.shortId;
     const entry=await URL.findOneAndUpdate({
